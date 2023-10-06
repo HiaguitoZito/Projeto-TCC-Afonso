@@ -4,7 +4,7 @@
   #include <ESP8266WiFi.h>
 #endif
 #include "ESPAsyncWebServer.h"
-#include "SPI.h"
+#include "SPI.h" 
 #include "LiquidCrystal_I2C.h"
 #include "Arduino.h"
 #include <ESP_EEPROM.h>
@@ -63,7 +63,7 @@ void setup() {
     Serial.print(".");
     delay(500);
   }
-  
+  Serial.println("Conectado");
   server.begin(); // Inicializa o servidor
   
   // Inicializa o display.
@@ -71,6 +71,12 @@ void setup() {
   lcd.backlight();
   
   EEPROM.begin(512);
+
+  //for (int i = 0 ; i < EEPROM.length() ; i++) {
+  //    EEPROM.write(i, 0);
+  //}
+
+    
   EEPROM.get(sizeof(double), Max);
   EEPROM.get(sizeof(double)*2, Soil);
   EEPROM.get(sizeof(double)*3, Height);
@@ -81,10 +87,15 @@ void setup() {
   if(Soil != Soil) Soil = 0;
   if(Effective != Effective) Effective = 0;
 
-  isMaxSet = Max != 0;
-  isSoilSet = Soil != 0;
-  isHeightSet = Height != 0;
-  isEffectiveSet = Effective != 0;
+  //isMaxSet = Max != 0;
+  //isSoilSet = Soil != 0;
+  //isHeightSet = Height != 0;
+  //isEffectiveSet = Effective != 0;
+
+  isMaxSet = true;
+  isSoilSet = true;
+  isHeightSet = true;
+  isEffectiveSet = true;
 }
 
 String Mensagens[8] = {"Coloque o implemento","no ponto inicial","Coloque o implemento","no Solo","Coloque o implemento","no ponto maximo","Altura do","Implemento"}; // Mensagens de configuração.
@@ -111,18 +122,22 @@ void loop() {
   String answer = client.readStringUntil('\r'); // Lê a resposta do ESP8266 secundario.
   client.flush(); // Limpa o buffer e pointers do cliente para não usar memória sem motivo.
   if(Reconfig){
-      String mensagem[3] = {"Reconfig. Max.", "Reconfig. Solo", "Reconfig. Altura"};
-          lcd.setCursor(0,0);
-          lcd.print(mensagem[i]);
-          isDrawn = true;
-        if(!okPressed2) i += digitalRead(Down)-digitalRead(Up); // Se você apertar para baixo vai adicionar 1 para variavel "i" o contrario acontecera se apertar para cima.
-        if(!okPressed2) while(digitalRead(Down)-digitalRead(Up) != 0); // Continua no "if statement" se o operador não soltar o botão de baixo/cima, para evitar double click.
+        String mensagem[3] = {"Reconfig. Max.", "Reconfig. Solo", "Reconfig. Altura"};
+        lcd.setCursor(0,0);
+        lcd.print(mensagem[i]);
+        isDrawn = true;
+        if(!okPressed2) {
+          i += digitalRead(Down)-digitalRead(Up); // Se você apertar para baixo vai adicionar 1 para variavel "i" o contrario acontecera se apertar para cima.
+          if(!okPressed2)isDrawn = digitalRead(Up) || digitalRead(Down) ? false : true; // Se o operador apertar qualquer botão ele ira atualizar a tela.
+          while(digitalRead(Down)-digitalRead(Up) != 0); // Continua no "if statement" se o operador não soltar o botão de baixo/cima, para evitar double click.
+        }
+        
 
         // Mantem a variavel i entre 0 e 2.
         i = i > 3 ? 3 : i; 
         i = i < 0 ? 0 : i;
         
-        if(!okPressed2)isDrawn = digitalRead(Up) || digitalRead(Down) ? false : true; // Se o operador apertar qualquer botão ele ira atualizar a tela.
+        
         if(okPressed2){
               lcd.clear();
               Height += digitalRead(Up)-digitalRead(Down);
@@ -205,6 +220,7 @@ void loop() {
         EEPROM.put(sizeof(double)*2,Max);
         boolean ok1 = EEPROM.commit();
             Serial.print(ok1 ? "Saved" : "Discarted");
+            isDrawn = false;
       }
     }
     else{
@@ -217,7 +233,7 @@ void loop() {
         isDrawn = true;
       }
       bool isP = false;
-      if(okPressed2){
+      if(!okPressed2){
           lcd.clear();
           Height += digitalRead(Up)-digitalRead(Down);
           lcd.setCursor(0,0);
